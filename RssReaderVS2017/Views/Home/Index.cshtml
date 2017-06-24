@@ -1,0 +1,353 @@
+﻿@model RSSList
+@using RssReaderVS2017.Models
+@{
+    ViewBag.Title = "RssReader";
+}
+@section css {
+    <link href="@Url.Content("~/Content/MyCss/MyStyle.css")" rel="stylesheet" />
+}
+<h2>RssReader</h2>
+
+<div>
+
+
+    <input type="button" class="btn btn-primary" value="Add Collection" onclick='AddCol();' />
+    <input type="text" id="newCol" name="Col" placeholder="new collection name..." class="form-control" style="min-width:60%" />
+
+    <br />
+    <input type="button" class="btn btn-primary" value="Add Rss Feed" onclick='CheckCollection();' />
+    <input type="URL" id="Myurl" name="RSSURL" placeholder="Enter RSS Feed URL Here..." class="form-control" style="min-width:60%" value="@ViewBag.URL" />
+
+    @*<input type="button" class="btn btn-danger" value="Save" onclick='saveRSS();' />*@
+    <br />
+
+    @*<a onclick='GetRSS();'>Get RSS</a>*@
+    <div id="urlsBlock"> </div>
+    <div id="createBlock"> </div>
+    @*<div class="verticalLine"></div>*@
+    <div class="MySpace"></div>
+    @*<hr width="1" size="500">*@
+    <div id="tableBlock"></div>
+
+
+
+    @section scripts
+{
+        <script type="text/javascript">
+
+
+            window.onload = function () {
+
+                GetCollections(true);//выводим на экран
+                GetCollections(false);//передаем мколлекции в GetUrls(LastCollection);
+                // setTimeout(Function("func();"), 4000);
+            }
+            function func() {
+                alert('Привет');
+            }
+
+
+            $("input[name=collection]:radio").change(function () {
+                var checkedCollection = $('input[name=collection]:checked').val();
+                GetUrls(checkedCollection);
+            });
+
+            //add new collection:
+            function AddCol() {
+                // получаем значения для добавляемого url
+                var Coll = {
+                    Col: "col",
+                    ColName: document.getElementById('newCol').value,
+                };
+
+                $.ajax({
+                    url: '/api/values/colPost',
+                    type: 'POST',
+                    data: JSON.stringify(Coll),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        location.reload();
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+            }
+            //Check the selected collection:
+            function CheckCollection() {
+                AddRss($('input[name=collection]:checked').val(), document.getElementById('Myurl').value);
+                GetCollections();
+                location.reload();
+            }
+
+            //add new feed:
+            function AddRss(collection, urlVal) {
+                // получаем значения для добавляемого url
+                var RssUrl = {
+                    col: collection,
+                    urlValue: document.getElementById('Myurl').value,
+                };
+
+                $.ajax({
+                    url: '/api/Feed',
+                    type: 'POST',
+                    data: JSON.stringify(RssUrl),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+            }
+
+
+
+            // Получение всех коллекций по ajax-запросу
+            function GetCollections(iswrite) {
+
+
+                $.ajax({
+                    url: '/api/collections/',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (iswrite == true) { WriteCollections(data); } else {
+                            var LastCollection = data[data.length - 1];
+                            GetUrls(LastCollection);
+                        }
+
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+
+            }
+            // Получение всех url-s по ajax-запросу
+            function GetUrls(Collection) {
+
+
+                var Coll = {
+                    Col: "col",
+                    ColName: Collection,
+                };
+                $.ajax({
+                    url: '/api/Url/',
+                    type: 'POST',
+                    data: JSON.stringify(Coll),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        WriteUrls(data, Collection);
+
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+
+            }
+
+            // Получение всех posts по ajax-запросу и url:
+            //function GetRSS() {
+            //    $.ajax({
+            //        url: 'api/values/',
+            //        async: false,
+            //        type: 'GET',
+            //        dataType: 'json',
+            //        //timeout: 3000, // sets timeout to 3 seconds
+            //        success: function (data) {
+
+            //            WriteResponse(data);
+            //            //GetCollections();
+            //        },
+            //        error: function (x, y, z) {
+            //            alert(x + '\n' + y + '\n' + z);
+            //        },
+
+            //    });
+            //}
+            function GetRSS(url) {
+
+                var ColName = {
+                    col: "col",
+                    urlValue: url,
+                };
+
+                $.ajax({
+                    url: '/api/AddFeed/',
+                    type: 'POST',
+                    data: JSON.stringify(ColName),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        WriteResponse(data);
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+            }
+            // вывод полученных данных на экран
+            function WriteResponse(RssList) {
+                var strResult = "<table><th>Title</th><th>Description</th><th>Link</th>";
+                var MyInd = 0;
+                //$.each(RssList, function (index, items) {
+                //alert(index + ": " + item[MyInd].Title);
+                $.each(RssList, function (index, item) {
+                    strResult += "<tr><td>" + item.Title + "</td><td> " + item.Description + "</td><td>" +
+                   "<a href=" + item.Link + " target=\"_blank\">More</a>";
+                    MyInd++;
+                    // })
+                });
+                strResult += "</table>";
+                $("#tableBlock").html(strResult);
+
+            }
+
+            // вывод полученных данных(коллекций) на экран
+            function WriteCollections(ColList) {
+                var strResult = "<table><th>Collections:</th>";
+                var MyInd = 0;
+                var checked = "";
+                $.each(ColList, function (index, item) {
+
+                    if (MyInd == 0) checked = "checked";
+                    strResult += '<tr><td><input type="radio" name="collection" value="' + item + '"' + checked + ' onclick = "GetUrls(\'' + item + '\')">' + item + '</td><td>' +
+                    '<a href=# onclick="DeleteCollection(\'' + item + '\')"> <font color="red">x</font> </a> &emsp;' +
+                    '<a href=# onclick="AllRSS(\'' + item + '\')"> <font color="red">show all</font> </a> &emsp;';
+
+                    MyInd++;
+                });
+                strResult += "</table>";
+                $("#createBlock").html(strResult);
+
+            }
+
+
+            // вывод полученных данных(url-s) на экран:
+            function WriteUrls(UrlList, Collection) {
+                var strResult = "<table><th>Feeds of selected collection:</th>";
+                var MyInd = 0;
+                var checked = "";
+
+                $.each(UrlList, function (index, item) {
+                    var ColUrl = {
+                        col: Collection,
+                        urlValue: item,
+                    };
+                    //var ColUrl = {
+                    //    col: Col,
+                    //    urlValue: url,
+                    //};
+                    strResult += '<tr><td><a onclick="GetRSS(\'' + item + '\')" target=\'_blank\'>' + item + '</a>' +
+                  '&emsp; <a href=# onclick="DeleteUrl(\'' + Collection + ',' + item + '\')"> <font color="red">x</font> </a> &emsp;</td>';
+
+                    MyInd++;
+
+                });
+                strResult += "</table>";
+                $("#urlsBlock").html(strResult);
+
+            }
+            function AllRSS(item) {
+                // получаем значения для добавляемого url
+                var Coll = {
+                    Col: "col",
+                    ColName: item,
+                };
+
+                $.ajax({
+                    url: '/api/AddAllFeeds/',
+                    type: 'POST',
+                    data: JSON.stringify(Coll),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        WriteResponse(data);
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+            }
+            function DeleteCollection(item) {
+                // получаем значения для добавляемого url
+                var Coll = {
+                    Col: "col",
+                    ColName: item,
+                };
+
+                $.ajax({
+                    url: '/api/Collections/',
+                    type: 'POST',
+                    data: JSON.stringify(Coll),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        location.reload();
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+            }
+
+
+            // Удалить выбранный url по ajax-запросу
+            function DeleteUrl(value) {
+                var resArray = value.split(',');
+
+                var ColUrl = {
+                    col: resArray[0],
+                    urlValue: resArray[1],
+                };
+                $.ajax({
+                    url: '/api/DeleteUrl/',
+                    type: 'POST',
+                    data: JSON.stringify(ColUrl),
+                    contentType: "application/json;charset=utf-8",
+                    success: function (data) {
+                        // WriteUrls(data);
+                        GetUrls(ColUrl.col)
+                    },
+                    //error: function (x, y, z) {
+                    //    alert(x + '\n' + y + '\n' + z);
+                    //}
+                });
+
+            }
+
+            //COOKIE:
+            //------------------------------------
+            //create cookie:
+            function bake_cookie(name, value) {
+                var cookie = [name, '=', JSON.stringify(value), '; domain=.', window.location.host.toString(), '; path=/;'].join('');
+                document.cookie = cookie;
+            }
+            //reade cookie:
+            function read_cookie(name) {
+                var result = document.cookie.match(new RegExp(name + '=([^;]+)'));
+                result && (result = JSON.parse(result[1]));
+                return result;
+            }
+            //delete cookie:
+            function delete_cookie(name) {
+                document.cookie = [name, '=; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/; domain=.', window.location.host.toString()].join('');
+            }
+            //------------------------------------
+
+
+            $(document).ready(function () {
+                $("#hide").click(function () {
+                    $("#SelectCol").hide();
+                });
+                $("#show").click(function () {
+                    $("#SelectCol").show();
+                });
+            });
+
+
+
+        </script>
+    }
+
+

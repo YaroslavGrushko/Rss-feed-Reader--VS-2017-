@@ -1,0 +1,38 @@
+﻿/*div {
+    display:inline-block; 
+    margin:20px;
+}*/
+#tableBlock {
+    width: auto;
+    left: -200px;
+}
+/*#editBlock {
+    display:none;
+    float:right;
+}*/
+#urlsBlock {
+    float: left;
+}
+
+#createBlock {
+    float: left;
+}
+
+.verticalLine {
+    width: 5px;
+    height: 330px;
+    border-left: thick solid #0085ff;
+    float: left;
+}
+
+.MySpace {
+    width: 20px;
+    height: 330px;
+    border-left: thick solid #ffffff;
+    float: left;
+}
+
+.forFooter {
+    position: fixed;
+    bottom: 0;
+}
